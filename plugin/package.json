@@ -1,0 +1,25 @@
+{
+  "name": "learnharness-remote-draw",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "sdk": "node scripts/sdk.mjs",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts"
+  },
+  "dependencies": {
+    "bonjour-service": "1.4.4",
+    "ws": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/ws": "8.18.1",
+    "esbuild": "0.28.2",
+    "learnharness-plugin-api": "file:.sdk",
+    "tsx": "4.23.12",
+    "typescript": "5.9.3"
+  }
+}

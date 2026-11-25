@@ -1,0 +1,9 @@
+{
+  "apiVersion": 1,
+  "id": "remote-draw",
+  "name": "Remote Draw",
+  "version": "0.1.0",
+  "minAppVersion": "0.7.0",
+  "description": "Draw on an iPad with Apple Pencil and send your working with learner submissions.",
+  "backend": "backend.cjs"
+}
