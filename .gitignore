@@ -3,3 +3,11 @@ dist/
 .sdk/
 .fake-ipad.json
 .DS_Store
+
+# Swift / Xcode
+.build/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+.dev-desktop/
+ios/build/

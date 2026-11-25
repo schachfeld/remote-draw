@@ -8,7 +8,7 @@ where it is sent along with your next message or answer.
 | [`protocol/PROTOCOL.md`](protocol/PROTOCOL.md) | The messages the plugin and the iPad app exchange. Both sides build against it. |
 | [`plugin/`](plugin/) | The LearnHarness plugin (TypeScript). |
 | [`tools/`](tools/) | `fake-ipad.mjs` plays the iPad, for testing the plugin without one. |
-| [`ios/`](ios/) | The iPad app (Swift, PencilKit). Not written yet. |
+| [`ios/`](ios/) | The iPad app (Swift, PencilKit). |
 
 ## Status
 
@@ -16,8 +16,10 @@ where it is sent along with your next message or answer.
    pairing, relay to app windows), the fake iPad, tests.
 2. **Done:** the plugin's window part: the pad, the pairing QR code and settings.
    Checked in a real LearnHarness instance against the fake iPad.
-3. **Next:** the iPad app, on a Mac. Start with [`ios/README.md`](ios/README.md).
-4. USB connection.
+3. **Done:** the iPad app. Checked in the iPad simulator against the plugin's
+   background service. See [`ios/README.md`](ios/README.md).
+4. **Next:** first run on a real iPad with Apple Pencil against LearnHarness.
+5. USB connection.
 
 ## Installing the plugin into LearnHarness
 
@@ -50,3 +52,16 @@ node tools/fake-ipad.mjs run
 ```
 
 `run` draws a few squiggles whenever a pad opens on the desktop.
+
+## Trying the iPad app without LearnHarness
+
+`plugin/scripts/dev-desktop.ts` runs the plugin's background service on its own and
+plays the app window. It needs `npm install` in `plugin/`, but no LearnHarness:
+
+```sh
+cd plugin
+npx tsx scripts/dev-desktop.ts
+```
+
+Type `pair` for a pairing link and `open` to open a pad. See
+[`ios/README.md`](ios/README.md#tests).

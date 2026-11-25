@@ -218,6 +218,9 @@ Rules for the app:
 - **Same sheet ID** as the one loaded: keep the canvas and its undo history and ignore
   `drawing`. Apply the new `theme`, `backgroundColor` and `reference`. If the theme
   changed, render again and send a fresh `ink`.
+- **First `pad` after connecting**, same sheet ID as the one loaded: also send a fresh
+  `ink`. The last one may have been lost with the previous connection, and the iPad's
+  drawing is the one that counts.
 
 ### `clear`
 
