@@ -1,0 +1,48 @@
+.remote-draw-root {
+  position: absolute; inset: 0;
+  overflow: hidden; background: var(--background); color: var(--foreground);
+}
+.remote-draw-tools {
+  position: absolute; top: 0; left: 0; z-index: 1;
+  display: flex; width: max-content; max-width: calc(100% - 52px); gap: 10px; align-items: center;
+  min-height: 48px; padding: 8px 12px; pointer-events: none;
+}
+.remote-draw-tools > span { flex: 0 0 auto; pointer-events: auto; }
+.remote-draw-link { font-size: 12px; color: var(--muted-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.remote-draw-link[data-state="connected"]::before { content: "● "; color: var(--lh-success); }
+.remote-draw-link[data-state="problem"] { color: var(--lh-error); }
+.remote-draw-viewport { position: absolute; inset: 0; min-width: 0; min-height: 0; overflow: hidden; cursor: grab; touch-action: none; user-select: none; }
+.remote-draw-viewport[data-panning] { cursor: grabbing; }
+.remote-draw-paper { position: absolute; inset: 0; overflow: hidden; }
+.remote-draw-background, .remote-draw-ink { position: absolute; max-width: none; max-height: none; pointer-events: none; user-select: none; }
+.remote-draw-background[hidden], .remote-draw-ink[hidden] { display: none; }
+.remote-draw-preview { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.remote-draw-status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; font-size: 13px; }
+.remote-draw-status[hidden], .remote-draw-paper[hidden] { display: none; }
+/* Native dock: 46rem column - 2rem outer padding - 2px shell borders
+   - 2rem question padding. Match its normal content width, never the window. */
+.remote-draw-reference { position: absolute; left: -100000px; top: 0; width: calc(42rem - 2px); box-sizing: border-box; color: inherit; }
+/* Offscreen, content-visibility:auto never renders and collapses to its intrinsic placeholder size. */
+.remote-draw-reference * { content-visibility: visible !important; }
+.remote-draw-reference-label { margin-bottom: 4px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .025em; color: var(--muted-foreground); }
+.remote-draw-reference-question { margin-bottom: 12px; font-weight: 500; }
+.remote-draw-reference-context { margin-bottom: 12px; font-size: 13px; color: var(--muted-foreground); }
+.remote-draw-reference-option { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--border); border-radius: 8px; margin-top: 8px; padding: 8px 12px; font-size: 13px; }
+.remote-draw-reference-mark { flex: 0 0 16px; width: 16px; height: 16px; margin-top: 2px; border: 1px solid var(--muted-foreground); border-radius: 50%; box-sizing: border-box; }
+.remote-draw-reference-mark[data-multiple="true"] { border-radius: 2px; }
+.remote-draw-reference-description { font-size: 11px; color: var(--muted-foreground); }
+.remote-draw-reference-extra { border-style: dashed; color: var(--muted-foreground); }
+
+.remote-draw-settings { display: flex; flex-direction: column; gap: 20px; }
+.remote-draw-settings h3 { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.remote-draw-settings p { margin: 0 0 8px; font-size: 13px; color: var(--muted-foreground); }
+.remote-draw-settings [role="alert"] { color: var(--lh-error); }
+.remote-draw-devices { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.remote-draw-devices li { display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 6px 6px 12px; font-size: 13px; }
+.remote-draw-devices li > div { flex: 1 1 auto; min-width: 0; }
+.remote-draw-devices small { display: block; color: var(--muted-foreground); font-size: 11px; }
+.remote-draw-pairing { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-top: 8px; }
+/* A QR code must stay dark on light to scan, whatever the app theme. */
+.remote-draw-qr { flex: 0 0 auto; width: 220px; height: 220px; padding: 12px; border-radius: 8px; background: #fff; box-sizing: border-box; }
+.remote-draw-qr svg { display: block; width: 100%; height: 100%; }
+.remote-draw-pairing code { display: block; max-width: 28rem; font-size: 11px; word-break: break-all; user-select: all; color: var(--muted-foreground); }

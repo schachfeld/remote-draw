@@ -184,7 +184,9 @@ No pad is open on the desktop:
 { "type": "pad", "open": false }
 ```
 
-The app shows "Open Remote Draw on the desktop" and accepts no ink.
+The app shows "Open Remote Draw on the desktop" and accepts no ink. It may keep the
+last sheet in memory: if the next open pad has the same sheet ID, the "same sheet ID"
+rule below applies and nothing is lost.
 
 A pad is open:
 
@@ -210,7 +212,9 @@ Rules for the app:
 
 - **New sheet ID** (different from the one loaded): replace the canvas. Load `drawing`
   if present, otherwise start empty. Clear the undo history. Scroll so the question
-  picture is at the top of the screen, or to the sheet centre if there is none.
+  picture is at the top of the screen, or to the sheet centre if there is none. If a
+  `drawing` was loaded, send a fresh `ink`, so the desktop's picture matches the
+  current theme.
 - **Same sheet ID** as the one loaded: keep the canvas and its undo history and ignore
   `drawing`. Apply the new `theme`, `backgroundColor` and `reference`. If the theme
   changed, render again and send a fresh `ink`.
@@ -221,8 +225,10 @@ Rules for the app:
 { "type": "clear", "sheet": "k3J9x-2" }
 ```
 
-Empty the canvas of that sheet and clear its undo history. Ignore it if another sheet
-is loaded. The app does not answer with an `ink` message.
+Empty the canvas of that sheet and clear its undo history, then answer with an `ink`
+message for the now empty drawing (no `image`). That answer is what makes both sides
+agree if a stroke was on its way while the desktop cleared. Ignore `clear` if another
+sheet is loaded.
 
 ## Messages from the client
 
@@ -236,7 +242,7 @@ The stroke that is being drawn right now, for the live line on the desktop.
 
 ```json
 { "type": "preview", "sheet": "k3J9x-2", "stroke": 7, "color": "#ffffff", "width": 3,
-  "points": [[1700.5, 640.25], [1702, 641]], "end": false }
+  "points": [[1700.5, 640.25], [1702, 641]], "end": false, "cancelled": false }
 ```
 
 | Field | Meaning |
@@ -246,6 +252,11 @@ The stroke that is being drawn right now, for the live line on the desktop.
 | `width` | Line width in points, greater than 0 and at most 100 |
 | `points` | 0–512 new points since the last `preview` of this stroke |
 | `end` | `true` in the last message of a stroke (finished or cancelled) |
+| `cancelled` | Optional, default `false`. `true` together with `end` when the stroke left no ink (for example a palm rejection). The desktop removes its line at once |
+
+A finished stroke's line stays on the desktop until an `ink` message whose `through`
+covers it arrives. As a safety net the desktop also removes an ended line after 5
+seconds.
 
 Send about 30 messages per second while the Pencil is down. Send nothing for the
 eraser, the lasso or the ruler.

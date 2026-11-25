@@ -14,11 +14,17 @@ where it is sent along with your next message or answer.
 
 1. **Done:** protocol, the plugin's background service (WebSocket server, Bonjour,
    pairing, relay to app windows), the fake iPad, tests.
-2. **Next:** the plugin's window part (the pad, QR code and settings in LearnHarness).
-3. The iPad app.
+2. **Done:** the plugin's window part: the pad, the pairing QR code and settings.
+   Checked in a real LearnHarness instance against the fake iPad.
+3. **Next:** the iPad app, on a Mac. Start with [`ios/README.md`](ios/README.md).
 4. USB connection.
 
-Until step 2 is built the plugin has no button or settings in LearnHarness.
+## Installing the plugin into LearnHarness
+
+Build it, then copy `plugin/dist/` to `<plugins directory>/remote-draw/dist/`. The
+plugins directory is shown in LearnHarness under **Settings → Community plugins**.
+Refresh the list there, enable Remote Draw, and restart LearnHarness after later
+updates. See [`plugin/README.md`](plugin/README.md) for use.
 
 ## Plugin development
 
@@ -35,8 +41,8 @@ npm run build                          # writes plugin/dist/
 
 ## Trying the connection without an iPad
 
-With the plugin running and a pairing QR code open, copy the code's
-`remotedraw://pair?...` text and run, from the repository root:
+In **Settings → Remote Draw** choose **Pair an iPad**, copy the `remotedraw://pair?...`
+text shown next to the QR code and run, from the repository root:
 
 ```sh
 node tools/fake-ipad.mjs pair 'remotedraw://pair?...'

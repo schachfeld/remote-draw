@@ -34,6 +34,7 @@ if (command === "pair" && rest[0]) {
       const { id, theme, reference } = message.sheet;
       console.log(`Pad open: sheet ${id}, ${theme} theme, ${reference ? "with" : "no"} question picture.`);
       if (drawnFor === id) return ipad.sendInk(); // Same sheet again, e.g. a theme change: render anew.
+      if (ipad.strokes.length) { drawnFor = id; return console.log("Loaded the stored drawing."); }
       drawnFor = id;
       const left = reference ? reference.x : 1700, top = reference ? reference.y + reference.height + 40 : 1900;
       for (let n = 0; n < count && ipad.sheet?.id === id; n++) {

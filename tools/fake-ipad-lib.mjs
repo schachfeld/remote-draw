@@ -100,17 +100,29 @@ export class FakeIpad {
           ready = true; resolve({ deviceKey: key.toString("base64url") });
         } else if (message.type === "pad") {
           if (!message.open) this.sheet = undefined;
-          else if (message.sheet.id !== this.sheet?.id) { this.sheet = message.sheet; this.strokes = []; }
+          else if (message.sheet.id !== this.sheet?.id) {
+            this.sheet = message.sheet;
+            // The fake's "drawing data" is its stroke list as JSON, so a stored drawing can be loaded back.
+            try { this.strokes = message.sheet.drawing ? JSON.parse(Buffer.from(message.sheet.drawing, "base64").toString()) : []; }
+            catch { this.strokes = []; }
+            if (message.sheet.drawing) this.sendInk();
+          }
           else this.sheet = { ...message.sheet, drawing: this.sheet.drawing };
           this.handlers.onPad?.(message);
         } else if (message.type === "clear") {
-          if (message.sheet === this.sheet?.id) this.strokes = [];
+          if (message.sheet === this.sheet?.id) { this.strokes = []; this.sendInk(); }
           this.handlers.onClear?.(message);
         }
       });
     });
   }
   send(message) { this.#socket.send(JSON.stringify(message)); }
+  /** A stroke that leaves no ink, e.g. a rejected palm. */
+  cancelStroke(points, { color = "#ffffff", width = 3 } = {}) {
+    const sheet = this.sheet.id, stroke = ++this.#stroke;
+    this.send({ type: "preview", sheet, stroke, color, width, points, end: false });
+    this.send({ type: "preview", sheet, stroke, color, width, points: [], end: true, cancelled: true });
+  }
   /** Draw one stroke: live previews in batches, then the rendered drawing. */
   async drawStroke(points, { color = "#ffffff", width = 3, batch = 8, delayMs = 0 } = {}) {
     if (!this.sheet) throw new Error("No pad is open.");

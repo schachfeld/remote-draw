@@ -142,7 +142,7 @@ it("sends the open sheet, relays previews and stores the latest ink", async () =
     await c.ipad.drawStroke(stroke(700), { color: "#FF0000", width: 4, batch: 8 });
     await until(() => f.topic("ink-updated").length === 1, "ink");
     const previews = f.topic("preview");
-    assert.deepEqual(previews.map(p => [p.windowId, p.sheet, p.stroke, p.color, p.width, p.points.length, p.end]),
+    assert.deepEqual(previews.map(p => [p.windowId, p.sheet, p.stroke, p.color, p.width, p.points.length, p.end || p.cancelled]),
       [[WINDOW_A, "s-1", 1, "#ff0000", 4, 8, false], [WINDOW_A, "s-1", 1, "#ff0000", 4, 8, false], [WINDOW_A, "s-1", 1, "#ff0000", 4, 4, false], [WINDOW_A, "s-1", 1, "#ff0000", 4, 0, true]]);
     assert.deepEqual(previews.flatMap(p => p.points), stroke(700));
     assert.deepEqual(f.topic("ink-updated"), [{ windowId: WINDOW_A, sheet: "s-1", seq: 1 }]);
@@ -158,11 +158,14 @@ it("sends the open sheet, relays previews and stores the latest ink", async () =
     const again = await reconnect(f, c);
     await until(() => again.pads.length === 1, "pad after reconnect");
     assert.equal(again.pads[0].sheet.drawing, ink.drawing);
+    // Having loaded it, the iPad renders it again for the desktop.
+    await until(() => f.topic("ink-updated").length === 2, "ink after loading");
+    assert.deepEqual((await f.call("get-ink", { windowId: WINDOW_A, sheet: "s-1" })).image, ink.image);
 
     // Undo back to nothing: an empty drawing has no image and nothing to restore.
-    again.ipad.strokes = []; again.ipad.sendInk();
-    await until(() => f.topic("ink-updated").length === 2, "empty ink");
-    assert.deepEqual(await f.call("get-ink", { windowId: WINDOW_A, sheet: "s-1" }), { sheet: "s-1", seq: 2, through: 0, theme: "dark" });
+    again.ipad.undo();
+    await until(() => f.topic("ink-updated").length === 3, "empty ink");
+    assert.deepEqual(await f.call("get-ink", { windowId: WINDOW_A, sheet: "s-1" }), { sheet: "s-1", seq: 3, through: 0, theme: "dark" });
     again.ipad.close();
     await until(() => f.call("get-status").devices[0].connected === false, "disconnect");
     const third = await reconnect(f, c);
@@ -233,7 +236,9 @@ it("clears a sheet on the iPad and forgets its stored drawing", async () => {
     await until(() => c.clears.length === 1, "clear");
     assert.deepEqual(c.clears[0], { type: "clear", sheet: "s-1" });
     assert.deepEqual(c.ipad.strokes, []);
-    assert.equal(await f.call("get-ink", { windowId: WINDOW_A, sheet: "s-1" }), null);
+    // The iPad confirms with an empty drawing, which settles any stroke that was on its way.
+    await until(() => f.topic("ink-updated").length === 2, "confirmation");
+    assert.deepEqual(await f.call("get-ink", { windowId: WINDOW_A, sheet: "s-1" }), { sheet: "s-1", seq: 2, through: 1, theme: "dark" });
     c.ipad.close();
     await until(() => f.call("get-status").devices[0].connected === false, "disconnect");
     const again = await reconnect(f, c);
@@ -295,5 +300,19 @@ it("stops everything when disabled", async () => {
     assert.equal(f.handlers.size, 0); assert.equal(f.stops, 1);
     await assert.rejects(client().ipad.connect({ url, deviceId: c.device.deviceId, deviceKey: c.deviceKey }));
     assert.equal(f.events.length, count, "nothing is emitted after disposal");
+  } finally { await f.close(); }
+});
+it("reports accepted practice problems and nothing for other sessions", async () => {
+  const f = fixture(); try {
+    await f.start();
+    f.records.set("practice-1", { kind: "practice", messages: [
+      { role: "assistant", id: "m1", content: [{ type: "toolCall", id: "t1", name: "problem" }] },
+      { role: "toolResult", toolCallId: "t1", toolName: "problem" }] });
+    f.records.set("teaching-1", { kind: "teaching", messages: [] });
+    const poses = await f.call("get-session-poses", { sessionId: "practice-1" });
+    assert.equal(poses.sessionId, "practice-1"); assert.equal(poses.poses.length, 1);
+    assert.deepEqual(await f.call("get-session-poses", { sessionId: "teaching-1" }), { sessionId: "teaching-1", poses: [] });
+    assert.deepEqual(await f.call("get-session-poses", { sessionId: "missing" }), { sessionId: "missing", poses: [] });
+    assert.throws(() => f.call("get-session-poses", { sessionId: "../x" }));
   } finally { await f.close(); }
 });

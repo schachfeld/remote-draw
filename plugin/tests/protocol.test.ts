@@ -32,11 +32,12 @@ it("rejects malformed handshake messages", () => {
 });
 it("validates preview messages", () => {
   const preview = { type: "preview", sheet: "s-1", stroke: 1, color: "#FFAA00", width: 3, points: [[1, 2], [3.5, -4]], end: false };
-  assert.deepEqual(parse(preview), { ...preview, color: "#ffaa00" });
+  assert.deepEqual(parse(preview), { ...preview, color: "#ffaa00", cancelled: false });
+  assert.equal((parse({ ...preview, end: true, cancelled: true }) as { cancelled: boolean }).cancelled, true);
   assert.deepEqual((parse({ ...preview, points: [], end: true }) as { points: unknown[] }).points, []);
   for (const change of [{ sheet: "" }, { sheet: "a b" }, { stroke: 0 }, { stroke: 1.5 }, { color: "red" }, { width: 0 }, { width: 101 }, { width: NaN },
     { points: [[1]] }, { points: [[1, 2, 3]] }, { points: [[1, "2"]] }, { points: [[1, Infinity]] }, { points: "x" },
-    { points: Array.from({ length: 513 }, () => [0, 0]) }, { end: "yes" }])
+    { points: Array.from({ length: 513 }, () => [0, 0]) }, { end: "yes" }, { cancelled: true }, { cancelled: "no" }])
     assert.throws(() => parse({ ...preview, ...change }), ProtocolError, JSON.stringify(change).slice(0, 60));
 });
 it("validates ink messages and their PNG", () => {

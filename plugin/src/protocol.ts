@@ -27,7 +27,7 @@ export type ServerMessage =
 
 export interface PairMessage { type: "pair"; deviceId: string; deviceName: string; nonce: string; proof: string }
 export interface AuthMessage { type: "auth"; deviceId: string; nonce: string; proof: string }
-export interface PreviewMessage { type: "preview"; sheet: string; stroke: number; color: string; width: number; points: [number, number][]; end: boolean }
+export interface PreviewMessage { type: "preview"; sheet: string; stroke: number; color: string; width: number; points: [number, number][]; end: boolean; cancelled: boolean }
 export interface InkMessage { type: "ink"; sheet: string; through: number; theme: Theme; drawing: string; image?: Picture }
 export type ClientMessage = PairMessage | AuthMessage | PreviewMessage | InkMessage;
 
@@ -90,11 +90,13 @@ export function parseClientMessage(raw: string): ClientMessage {
       if (!Number.isSafeInteger(stroke) || (stroke as number) < 1) fail("Invalid stroke.");
       if (width <= 0 || width > 100) fail("Invalid width.");
       if (typeof input.end !== "boolean") fail("Invalid end.");
+      if (input.cancelled !== undefined && typeof input.cancelled !== "boolean") fail("Invalid cancelled.");
+      if (input.cancelled === true && input.end !== true) fail("Only an ended stroke can be cancelled.");
       if (!Array.isArray(points) || points.length > MAX_PREVIEW_POINTS) fail("Invalid points.");
       const parsed = (points as unknown[]).map(point => Array.isArray(point) && point.length === 2 &&
         point.every(n => typeof n === "number" && Number.isFinite(n)) ? [point[0], point[1]] as [number, number] : fail("Invalid point."));
       return { type: "preview", sheet: text(input, "sheet", SHEET_ID), stroke: stroke as number, color: text(input, "color", COLOR).toLowerCase(),
-        width, points: parsed, end: input.end as boolean };
+        width, points: parsed, end: input.end as boolean, cancelled: input.cancelled === true };
     }
     case "ink": {
       const through = input.through;

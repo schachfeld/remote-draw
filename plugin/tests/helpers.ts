@@ -21,11 +21,13 @@ export function fixture(overrides: Partial<Dependencies> = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "remote-draw-test-"));
   const directory = path.join(root, "data"), controller = new AbortController();
   const handlers = new Map<string, (input: unknown) => unknown>();
+  const records = new Map<string, unknown>();
   const events: { topic: string; data: any }[] = [], advertised: { name: string; port: number; serverId: string }[] = [];
   let clock = 1_000_000, stops = 0, off: (() => Promise<void>) | undefined;
   const ctx = { dataDirectory: directory, signal: controller.signal,
     handle(name: string, handler: (input: unknown) => unknown) { handlers.set(name, handler); return () => { handlers.delete(name); }; },
     events: { emit(topic: string, data: unknown) { events.push({ topic, data }); } },
+    learning: { getSession(id: string) { return records.get(id) ?? null; } },
   } as unknown as PluginBackendContext;
   const deps: Dependencies = {
     advertise(options) { advertised.push({ name: options.name, port: options.port, serverId: options.serverId }); return { stop() { stops++; } }; },
@@ -33,7 +35,7 @@ export function fixture(overrides: Partial<Dependencies> = {}) {
     link: { host: "127.0.0.1" }, sweepMs: 10, ...overrides,
   };
   const self = {
-    directory, events, advertised, controller, handlers,
+    directory, events, advertised, controller, handlers, records,
     get stops() { return stops; },
     advance(ms: number) { clock += ms; },
     /** Uses a random high port unless a settings file already exists. */

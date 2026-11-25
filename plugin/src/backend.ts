@@ -3,6 +3,7 @@ import type { PluginBackendContext } from "learnharness-plugin-api";
 import { advertise as bonjour, type Advertise, type Advertisement } from "./discovery.ts";
 import { Link, type LinkOptions } from "./link.ts";
 import { PROTOCOL_VERSION, isSheetId, parseSheetState, type InkMessage, type Picture, type SheetState, type Theme } from "./protocol.ts";
+import { acceptedPoseKeys } from "./poses.ts";
 import { Store, parseSettingsChange } from "./store.ts";
 
 /** A window that has not confirmed its open pad for this long is treated as gone
@@ -134,6 +135,14 @@ export async function activateWith(ctx: PluginBackendContext, deps: Dependencies
       return { ...next };
     }),
     ctx.handle("get-status", () => { assertActive(); return status(); }),
+    // Read-only: accepted practice-problem identities, to know when a new problem resets the sheet.
+    ctx.handle("get-session-poses", input => {
+      assertActive();
+      const { sessionId } = fields(input, ["sessionId"]);
+      if (typeof sessionId !== "string" || !/^[A-Za-z0-9_-]+$/.test(sessionId)) throw new Error("Expected a valid sessionId.");
+      const record = ctx.learning.getSession(sessionId);
+      return { sessionId, poses: record?.kind === "practice" ? acceptedPoseKeys(record.messages) : [] };
+    }),
     ctx.handle("start-pairing", () => {
       assertActive();
       if (link.port === undefined) throw new Error(link.error ?? "Remote Draw is not listening yet.");
