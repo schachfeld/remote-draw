@@ -1,6 +1,7 @@
 import type { PluginAction, PluginActionContext, PluginFrontendContext, PluginSurfaceProps, PluginWidgetHandle } from "learnharness-plugin-api";
 import { abortable } from "./abort.ts";
 import { exportSheet } from "./capture.ts";
+import { Follower } from "./follow.ts";
 import { referenceOnSheet } from "./geometry.ts";
 import { TABLET } from "./icons.ts";
 import { linkLine, parseStatus, type Status } from "./link-status.ts";
@@ -11,11 +12,13 @@ import { mountSheet, type MountedSheet } from "./sheet.ts";
 import { Sheets, type IncomingInk, type SessionSheet } from "./state.ts";
 import { parseSettings, type Settings } from "./store-defaults.ts";
 import { appendDrawing } from "./submission.ts";
-import { appPalette, colorHex, recolorReference } from "./theme.ts";
+import { appPalette, captureReference, colorHex, recolorReference } from "./theme.ts";
 
 /** How often an open pad confirms itself to the background service, which
  * treats a window silent for 30 seconds as gone. */
 export const KEEP_PAD_MS = 10_000;
+/** How often the window looks at which page is in front while no pad is open. */
+export const FOLLOW_MS = 1000;
 type SessionAction = Extract<PluginActionContext, { surface: "session" }>;
 interface OpenPad {
   session: SessionSheet;
@@ -47,16 +50,21 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     const key = [...sheets.sessions.values()].map(state => `${state.id}:${sheets.pending(state) ? 1 : 0}:${state.draft ? 1 : 0}:` +
       `${state.draft?.ink ? 1 : 0}:${state.seenPoses.size}`).join("|");
     if (key !== hostKey) { hostKey = key; ctx.refreshActions(); ctx.refreshSubmissions(); }
+    // A followed sheet that was reset or emptied is made again for the current question.
+    if (reason === "sheet" || (reason === "ink" && follower.followed?.draft && !follower.followed.draft.ink)) follower.follow();
     if (reason === "sheet") {
       syncPad();
       if ([...sheets.sessions.values()].some(state => state.draft && state.draft.palette !== appPalette().key)) void refreshPalette().catch(report);
     }
   }, state => { if (open?.session === state) close(open); });
 
-  // ---- The open pad as the background service and the iPad see it ----------
+  // ---- The sheet the background service and the iPad see ------------------
+  // The open pad's sheet, or with no pad open the sheet of the session page in front.
   let padKey = "", padQueue: Promise<unknown> = Promise.resolve();
+  const padOpen = () => !!open && !open.closed;
+  const target = () => padOpen() ? open!.session : follower.followed;
   function wireSheet(): SheetState | null {
-    const draft = open && !open.closed ? open.session.draft : undefined;
+    const draft = target()?.draft;
     if (!draft) return null;
     const reference = draft.background ? { ...referenceOnSheet(draft.width, draft.height), png: draft.background.slice(draft.background.indexOf(",") + 1) } : undefined;
     return { id: draft.sheetId, theme: draft.theme, backgroundColor: colorHex(draft.backgroundColor),
@@ -66,7 +74,7 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
    * the iPad already has them. */
   function syncPad(force = false): void {
     if (!live() && !force) return;
-    const draft = open && !open.closed ? open.session.draft : undefined;
+    const draft = target()?.draft;
     const key = draft ? `${draft.sheetId}|${draft.palette ?? ""}|${draft.background.length}` : "";
     if (key === padKey && !force) return;
     padKey = key;
@@ -75,16 +83,16 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     padQueue = padQueue.then(() => ctx.call("set-pad", { windowId, sheet })).then(() => { if (sheet) void fetchInk().catch(report); }, report);
   }
   async function fetchInk(): Promise<void> {
-    const pad = open, draft = pad && !pad.closed ? pad.session.draft : undefined;
-    if (!pad || !draft) return;
+    const state = target(), draft = state?.draft;
+    if (!state || !draft) return;
     const value = await ctx.call("get-ink", { windowId, sheet: draft.sheetId }) as (IncomingInk & { through: number }) | null;
-    if (!live() || !value || open !== pad || pad.closed) return;
-    sheets.setInk(pad.session, value);
-    pad.mounted?.inkThrough(value.through);
+    if (!live() || !value || target() !== state) return;
+    sheets.setInk(state, value);
+    if (open?.session === state) open.mounted?.inkThrough(value.through);
   }
   /** Empty the sheet here and on the iPad. */
   function clearRemote(state: SessionSheet, sheetId: string | undefined): void {
-    if (sheetId && open?.session === state && !open.closed)
+    if (sheetId && target() === state)
       padQueue = padQueue.then(() => ctx.call("clear-sheet", { windowId, sheet: sheetId })).catch(report);
   }
   function applyStatus(value: unknown): void {
@@ -94,6 +102,7 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     if (before !== status.devices.find(device => device.connected)?.id) open?.mounted?.resetPreviews();
     open?.mounted?.setLink(linkLine(status, windowId, true));
     for (const observer of observers) observer();
+    follow();
   }
   const refreshStatus = async () => applyStatus(await ctx.call("get-status"));
 
@@ -104,7 +113,28 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     pad.mounted?.dispose(); pad.controller.abort(); pad.handle?.dispose();
     sheets.dropUntouched(pad.session);
     syncPad(true);
+    follow();
   }
+
+  // ---- Drawing without the pad ----------------------------------------------
+  let lastStrokeAt = 0;
+  const canReadSession = typeof ctx.app.currentSession === "function";
+  const follower = new Follower(sheets, {
+    live, padOpen, report,
+    connected: () => !!status?.devices.some(device => device.connected),
+    pathname: () => ctx.app.pathname(),
+    ...(canReadSession ? { currentSession: () => ctx.app.currentSession() } : {}),
+    call: (name, input) => ctx.call(name, input),
+    async capture(reference, signal) {
+      let palette: ReturnType<typeof appPalette>, sheet: Awaited<ReturnType<typeof captureReference>>;
+      do { palette = appPalette(); sheet = await captureReference(ctx, reference, signal); } while (palette.key !== appPalette().key);
+      return { ...sheet, palette: palette.key, theme: palette.mode };
+    },
+    lastStrokeAt: () => lastStrokeAt,
+    sync: () => syncPad(),
+    matched: (pathname, sessionId) => { pageSessions.set(pathname, sessionId); },
+  });
+  const follow = () => follower.follow();
   function toggle(context: SessionAction): void {
     if (!context.view) throw new Error("This LearnHarness build does not expose the session view context required by Remote Draw.");
     const hadState = sheets.sessions.has(context.sessionId);
@@ -118,7 +148,7 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     // sheet policy as close before deciding whether this mount needs a reference.
     sheets.dropUntouched(state);
     const pad: OpenPad = { session: state, controller: new AbortController(), closed: false };
-    open = pad;
+    open = pad; follower.release();
     try {
       pad.handle = ctx.ui.openSurface(context.surfaceTarget, {
         title: "Remote Draw pad", background: "opaque",
@@ -203,7 +233,7 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     if (disposed) return;
     if (open) close(open);
     disposed = true;
-    paletteController.abort();
+    paletteController.abort(); follower.dispose();
     for (const cleanup of cleanups.splice(0)) cleanup();
     sheets.dispose(); pageSessions.clear(); observers.clear();
   };
@@ -214,18 +244,19 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     if (event.topic === "settings-changed") applySettings(event.data);
     else if (event.topic === "status-changed") { try { applyStatus(event.data); } catch (error) { report(error); } }
     else if (data?.windowId !== windowId) return;
-    else if (event.topic === "preview") open?.mounted?.preview(data as unknown as PreviewMessage);
+    else if (event.topic === "preview") { lastStrokeAt = Date.now(); open?.mounted?.preview(data as unknown as PreviewMessage); }
     else if (event.topic === "ink-updated") void fetchInk().catch(report);
   }));
   cleanups.push(ctx.onAppEvent(event => {
     if (event.type !== "turn-settled" && event.type !== "record-changed") return;
+    if (follower.followed?.id === event.chatId) follow();
     const state = sheets.sessions.get(event.chatId);
     if (state?.kind === "practice") void refreshPoses(state, ctx.signal).catch(report);
   }));
   cleanups.push(ctx.onResync(() => {
     void refreshSettings().catch(report); void refreshStatus().catch(report);
     // The service may have restarted and forgotten this window's pad.
-    syncPad(true);
+    syncPad(true); follow();
     for (const state of sheets.sessions.values()) if (state.kind === "practice") void refreshPoses(state, ctx.signal).catch(report);
   }));
   const keep = setInterval(() => {
@@ -233,6 +264,17 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     void (ctx.call("keep-pad", { windowId }) as Promise<{ open: boolean }>).then(result => { if (live() && padKey && !result.open) syncPad(true); }, report);
   }, KEEP_PAD_MS);
   cleanups.push(() => clearInterval(keep));
+  // There is no navigation event. A changed path is followed at once; an empty
+  // sheet is checked against the question now and then, because revealing a
+  // question raises no event either.
+  let followTicks = 0, followedPath = "";
+  const watch = setInterval(() => {
+    if (!live() || padOpen() || !status?.devices.some(device => device.connected)) return;
+    const path = ctx.app.pathname(), moved = path !== followedPath;
+    followedPath = path;
+    if (moved || (++followTicks % 2 === 0 && !follower.followed?.draft?.ink)) follow();
+  }, FOLLOW_MS);
+  cleanups.push(() => clearInterval(watch));
   if (typeof document !== "undefined" && typeof MutationObserver !== "undefined") {
     const observer = new MutationObserver(() => { void refreshPalette().catch(report); });
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });

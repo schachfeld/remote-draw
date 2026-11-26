@@ -23,7 +23,7 @@ Everything the app sends and receives is specified in
 | `InkRenderer.swift` | `PKDrawing` to the transparent PNG the desktop shows |
 | `StrokeObserver.swift` | Watches Pencil touches for the live preview without taking them from PencilKit |
 | `PairingScreen.swift` | QR scanner and the field for a pasted pairing link |
-| `PadScreen.swift` | The canvas plus the notices ("Open Remote Draw on the desktop", "Looking for …") |
+| `PadScreen.swift` | The canvas plus the notices ("Open a session on the desktop", "Looking for …") |
 | `PairingStore.swift` | The pairing (with the device key) in the Keychain |
 
 ## Running it on an iPad
@@ -34,7 +34,8 @@ Everything the app sends and receives is specified in
 3. Install and enable the plugin in LearnHarness (see the repository README).
 4. In LearnHarness, **Settings → Remote Draw → Pair an iPad**, and scan the code in the
    app. The iPad asks for camera and local-network access; allow both.
-5. Open a teaching session, press **Remote draw**, and draw on the iPad.
+5. Open a teaching session and draw on the iPad. **Remote draw** on the desktop shows
+   the drawing there; it is not needed for drawing.
 
 The pairing link can also be pasted as text on the pairing screen, and scanning the QR
 code with the Camera app opens Remote Draw through the `remotedraw://` link.
@@ -43,7 +44,7 @@ code with the Camera app opens Remote Draw through the `remotedraw://` link.
 
 - **Pencil draws, fingers pan and pinch-zoom.** The sheet is 4000 × 4000 points and the
   question picture lies read-only under the ink.
-- **No pad open or no connection:** a notice covers the sheet and no ink is accepted.
+- **No session in front on the desktop, or no connection:** a notice covers the sheet and no ink is accepted.
   The sheet is kept, so the same sheet coming back loses nothing.
 - **Finding the Mac:** Bonjour first (two seconds), then the addresses from the QR code,
   the one that worked last first. This is what makes a tailnet work.

@@ -178,17 +178,21 @@ A **sheet** is one drawing surface belonging to one LearnHarness session.
 Full state. Sent after the handshake and whenever the open pad, its sheet, its theme or
 its question picture changes.
 
-No pad is open on the desktop:
+"Open" means the desktop has a sheet to draw on: either the Remote Draw pad is open in
+a window, or a session page is in front there and the plugin made a sheet for it without
+showing the pad. The app cannot tell the two apart and does not need to.
+
+No sheet is available on the desktop:
 
 ```json
 { "type": "pad", "open": false }
 ```
 
-The app shows "Open Remote Draw on the desktop" and accepts no ink. It may keep the
+The app shows "Open a session on the desktop" and accepts no ink. It may keep the
 last sheet in memory: if the next open pad has the same sheet ID, the "same sheet ID"
 rule below applies and nothing is lost.
 
-A pad is open:
+A sheet is available:
 
 ```json
 { "type": "pad", "open": true, "sheet": {

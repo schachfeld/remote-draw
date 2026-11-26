@@ -143,6 +143,14 @@ export async function activateWith(ctx: PluginBackendContext, deps: Dependencies
       const record = ctx.learning.getSession(sessionId);
       return { sessionId, poses: record?.kind === "practice" ? acceptedPoseKeys(record.messages) : [] };
     }),
+    // Read-only: only for app versions that cannot tell the window which session is in front.
+    ctx.handle("get-session-kind", input => {
+      assertActive();
+      const { sessionId } = fields(input, ["sessionId"]);
+      if (typeof sessionId !== "string" || !/^[A-Za-z0-9_-]+$/.test(sessionId)) throw new Error("Expected a valid sessionId.");
+      const record = ctx.learning.getSession(sessionId);
+      return { sessionId, kind: record ? record.kind === "practice" ? "practice" : "teaching" : null };
+    }),
     ctx.handle("start-pairing", () => {
       assertActive();
       if (link.port === undefined) throw new Error(link.error ?? "Remote Draw is not listening yet.");

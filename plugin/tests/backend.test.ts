@@ -314,5 +314,10 @@ it("reports accepted practice problems and nothing for other sessions", async ()
     assert.deepEqual(await f.call("get-session-poses", { sessionId: "teaching-1" }), { sessionId: "teaching-1", poses: [] });
     assert.deepEqual(await f.call("get-session-poses", { sessionId: "missing" }), { sessionId: "missing", poses: [] });
     assert.throws(() => f.call("get-session-poses", { sessionId: "../x" }));
+    assert.deepEqual(await f.call("get-session-kind", { sessionId: "practice-1" }), { sessionId: "practice-1", kind: "practice" });
+    f.records.set("teach-1", { kind: "teach", messages: [] }); f.records.set("plain-1", { messages: [] });
+    for (const id of ["teach-1", "plain-1"]) assert.deepEqual(await f.call("get-session-kind", { sessionId: id }), { sessionId: id, kind: "teaching" });
+    assert.deepEqual(await f.call("get-session-kind", { sessionId: "missing" }), { sessionId: "missing", kind: null });
+    assert.throws(() => f.call("get-session-kind", { sessionId: "../x" }));
   } finally { await f.close(); }
 });

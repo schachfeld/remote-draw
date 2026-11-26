@@ -18,8 +18,10 @@ where it is sent along with your next message or answer.
    Checked in a real LearnHarness instance against the fake iPad.
 3. **Done:** the iPad app. Checked in the iPad simulator against the plugin's
    background service. See [`ios/README.md`](ios/README.md).
-4. **Next:** first run on a real iPad with Apple Pencil against LearnHarness.
-5. USB connection.
+4. **Done, not yet tried live:** drawing without the pad open on the desktop. Unit
+   tested only; see [`plugin/README.md`](plugin/README.md#drawing-without-the-pad).
+5. **Next:** first run on a real iPad with Apple Pencil against LearnHarness.
+6. USB connection.
 
 ## Installing the plugin into LearnHarness
 
@@ -51,7 +53,8 @@ node tools/fake-ipad.mjs pair 'remotedraw://pair?...'
 node tools/fake-ipad.mjs run
 ```
 
-`run` draws a few squiggles whenever a pad opens on the desktop.
+`run` draws a few squiggles whenever a sheet opens on the desktop: when a session page
+is in front, or when you press **Remote draw**.
 
 ## Trying the iPad app without LearnHarness
 

@@ -44,8 +44,8 @@ struct PadScreen: View {
     private var notice: Notice? {
         switch model.link {
         case .connected:
-            return model.padOpen ? nil : Notice(symbol: "rectangle.and.pencil.and.ellipsis", title: "Open Remote Draw on the desktop",
-                                                detail: "In a LearnHarness session on \(macName), press Remote draw. The question appears here and you can draw.")
+            return model.padOpen ? nil : Notice(symbol: "rectangle.and.pencil.and.ellipsis", title: "Open a session on the desktop",
+                                                detail: "Open a teaching or practice session in LearnHarness on \(macName). The question appears here and you can draw.")
         case .idle, .connecting, .waiting(.unreachable):
             return Notice(symbol: "wifi", title: "Looking for \(macName)…",
                           detail: "LearnHarness has to be running with Remote Draw enabled, and both devices on the same network or tailnet.", busy: true)

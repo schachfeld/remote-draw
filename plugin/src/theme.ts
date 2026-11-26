@@ -1,6 +1,6 @@
 import type { PluginFrontendContext } from "learnharness-plugin-api";
 import { captureBackground } from "./capture.ts";
-import { mountReference } from "./reference.ts";
+import { mountReference, type Reference } from "./reference.ts";
 import type { Draft } from "./state.ts";
 
 // Read the selected app palette, not the operating system's color preference.
@@ -29,6 +29,21 @@ export async function recolorReference(draft: Draft, ctx: PluginFrontendContext,
     const captured = await captureBackground(reference, mounted.slots, draft.width, draft.height, backgroundColor, signal,
       { width: draft.width, height: draft.height, pixelRatio: draft.pixelRatio });
     return { background: captured.background, backgroundColor: captured.backgroundColor };
+  } finally { mounted?.dispose(); root.remove(); }
+}
+
+/** Make a sheet's question picture without a pad on screen. No reference gives a blank sheet. */
+export async function captureReference(ctx: PluginFrontendContext, reference: Reference | undefined, signal: AbortSignal): ReturnType<typeof captureBackground> {
+  const root = document.createElement("div"); root.className = "remote-draw-root";
+  root.style.cssText = "position:fixed;inset:auto;left:-100000px;top:0;pointer-events:none";
+  root.setAttribute("aria-hidden", "true"); document.body.append(root);
+  let mounted: ReturnType<typeof mountReference> | undefined;
+  try {
+    const backgroundColor = getComputedStyle(root).backgroundColor;
+    if (!reference) return await captureBackground(undefined, [], 1, 1, backgroundColor, signal);
+    const element = document.createElement("div"); element.className = "remote-draw-reference"; root.append(element);
+    mounted = mountReference(element, ctx, reference, signal);
+    return await captureBackground(element, mounted.slots, 1, 1, backgroundColor, signal);
   } finally { mounted?.dispose(); root.remove(); }
 }
 
