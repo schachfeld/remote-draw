@@ -28,8 +28,9 @@ Everything the app sends and receives is specified in
 
 ## Running it on an iPad
 
-1. Open `RemoteDraw.xcodeproj`. Signing is automatic. Choose your own team in Xcode. The app uses
-   bundle ID `io.github.schachfeld.remotedraw`.
+1. Open `RemoteDraw.xcodeproj`. Signing is automatic and no team is set: choose yours
+   under **Signing & Capabilities**, and change the bundle ID
+   `io.github.schachfeld.remotedraw` to one of your own.
 2. Select the iPad as the run destination and press Run.
 3. Install and enable the plugin in LearnHarness (see the repository README).
 4. In LearnHarness, **Settings → Remote Draw → Pair an iPad**, and scan the code in the
@@ -98,7 +99,8 @@ cd ios
 auth=(-allowProvisioningUpdates -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_<key ID>.p8 \
       -authenticationKeyID <key ID> -authenticationKeyIssuerID <issuer ID>)
 xcodebuild -project RemoteDraw.xcodeproj -scheme RemoteDraw -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath build/tf/RemoteDraw.xcarchive "${auth[@]}" archive
+  -destination 'generic/platform=iOS' -archivePath build/tf/RemoteDraw.xcarchive \
+  DEVELOPMENT_TEAM=<team ID> "${auth[@]}" archive
 xcodebuild -exportArchive -archivePath build/tf/RemoteDraw.xcarchive -exportPath build/tf/export \
   -exportOptionsPlist ExportOptions.plist "${auth[@]}"
 xcrun altool --upload-app -t ios -f build/tf/export/RemoteDraw.ipa --apiKey <key ID> --apiIssuer <issuer ID>
