@@ -15,6 +15,7 @@ Everything the app sends and receives is specified in
 | `RemoteDraw/` | The app: screens, the PencilKit canvas, the Keychain store |
 | `RemoteDrawKit/` | A Swift package with everything about the connection that needs no UIKit: pairing code, handshake, messages, WebSocket, Bonjour lookup, reconnecting. Tested on the Mac |
 | `Info.plist` | The keys Xcode cannot generate: the Bonjour service and the `remotedraw://` link |
+| `AppIcon.svg` | Source of the app icon. Render it to a 1024 × 1024 PNG **without alpha** as `RemoteDraw/Assets.xcassets/AppIcon.appiconset/AppIcon.png` |
 
 | File in `RemoteDraw/` | Role |
 | --- | --- |

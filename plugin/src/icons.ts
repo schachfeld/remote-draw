@@ -1,3 +1,3 @@
 const icon = (paths: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
-/** A tablet with a pen stroke on it. */
-export const TABLET = icon('<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 15c2-4 3 2 5-2s2-1 3-4"/>');
+/** The app icon in small: an orbit drawn by a pencil, ending at the hollow ring (LearnHarness). */
+export const REMOTE_DRAW = icon('<path d="M6.92 7.61A7 7 0 0 1 14.41 3.06M20.44 9.09A7 7 0 0 1 8.55 14.95" stroke-width="1.75"/><circle cx="18.45" cy="5.05" r="2.6"/><path d="M8.55 14.95L6.82 19.32L11.01 18.95Z" fill="currentColor" stroke="none"/><path d="M6.93 20.51L7.31 24.9L11.5 24.53L11.11 20.15Z" fill="currentColor" stroke="none"/>');

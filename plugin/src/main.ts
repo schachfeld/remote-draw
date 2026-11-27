@@ -3,7 +3,7 @@ import { abortable } from "./abort.ts";
 import { exportSheet } from "./capture.ts";
 import { Follower } from "./follow.ts";
 import { referenceOnSheet } from "./geometry.ts";
-import { TABLET } from "./icons.ts";
+import { REMOTE_DRAW } from "./icons.ts";
 import { linkLine, parseStatus, type Status } from "./link-status.ts";
 import { acceptedPoseKeys, occurrenceKey, parsePoseResponse } from "./poses.ts";
 import type { PreviewMessage, SheetState } from "./protocol.ts";
@@ -177,7 +177,7 @@ export async function activate(ctx: PluginFrontendContext): Promise<() => void> 
     } catch (error) { close(pad); throw error; }
   }
   const action: PluginAction = {
-    id: "remote-draw", icon: TABLET,
+    id: "remote-draw", icon: REMOTE_DRAW,
     shortcut: { scope: { sessions: ["teaching", "practice"] }, defaultBinding: "mod+shift+r" },
     // A readonly string accessor uses public pathname + our click-time mapping;
     // no state capture occurs in disabled/render-time predicates.
