@@ -126,11 +126,11 @@ export async function referenceFontCSS(root: HTMLElement, signal: AbortSignal): 
       offset = token.end;
     }
     source += face.source.slice(offset);
+    // Gecko rejects setProperty on @font-face descriptors, so override src in the
+    // rule text instead: the parser keeps the last declaration.
     const detached = new window.CSSStyleSheet();
-    detached.insertRule(`@font-face { ${face.css} }`);
-    const rule = detached.cssRules[0] as CSSFontFaceRule;
-    rule.style.setProperty("src", source);
-    return rule.cssText;
+    detached.insertRule(`@font-face { ${face.css}; src: ${source}; }`);
+    return detached.cssRules[0]!.cssText;
   }));
   signal.throwIfAborted();
   return result.join("\n");
